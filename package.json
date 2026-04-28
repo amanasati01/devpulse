@@ -13,6 +13,7 @@
     "lint": "turbo run lint",
     "db:generate": "pnpm --filter @devpulse/db prisma:generate",
     "db:migrate": "pnpm --filter @devpulse/db prisma:migrate",
+    "db:migrate:deploy": "pnpm --filter @devpulse/db prisma:migrate:deploy",
     "db:seed": "pnpm --filter @devpulse/db prisma:seed"
   },
   "devDependencies": {

@@ -7,6 +7,7 @@
   "scripts": {
     "prisma:generate": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- prisma generate; else prisma generate; fi'",
     "prisma:migrate": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- prisma migrate dev; else prisma migrate dev; fi'",
+    "prisma:migrate:deploy": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- prisma migrate deploy; else prisma migrate deploy; fi'",
     "prisma:seed": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- tsx prisma/seed.ts; else tsx prisma/seed.ts; fi'"
   },
   "dependencies": {
