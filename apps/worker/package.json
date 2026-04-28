@@ -1,0 +1,22 @@
+{
+  "name": "@devpulse/worker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "dotenv -e ../../.env -- tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@devpulse/db": "workspace:*",
+    "@devpulse/lib": "workspace:*",
+    "bullmq": "^5.12.9",
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.6",
+    "dotenv-cli": "^8.0.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

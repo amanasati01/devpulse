@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id           String         @id @default(uuid())
+  name         String
+  slug         String         @unique
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  users        User[]
+  pullRequests PullRequest[]
+  doraSnapshots DoraSnapshot[]
+  webhookEvents WebhookEvent[]
+  incidents    Incident[]
+  riskScores   RiskScore[]
+}
+
+model User {
+  id           String       @id @default(uuid())
+  orgId        String
+  githubId     String       @unique
+  email        String       @unique
+  name         String?
+  avatarUrl    String?
+  githubToken  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model PullRequest {
+  id             String       @id @default(uuid())
+  orgId          String
+  repo           String
+  number         Int
+  title          String
+  author         String
+  state          String
+  additions      Int          @default(0)
+  deletions      Int          @default(0)
+  changedFiles   Int          @default(0)
+  mergedAt       DateTime?
+  closedAt       DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  summary        String?
+  summaryUpdatedAt DateTime?
+  organization   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  riskScore      RiskScore?
+
+  @@unique([orgId, repo, number])
+  @@index([orgId, state, createdAt])
+}
+
+model DoraSnapshot {
+  id                 String       @id @default(uuid())
+  orgId              String
+  deploymentFrequency Float
+  leadTimeHours      Float
+  changeFailureRate  Float
+  mttrHours          Float
+  capturedAt         DateTime     @default(now())
+  organization       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, capturedAt])
+}
+
+model WebhookEvent {
+  id           String       @id @default(uuid())
+  orgId        String
+  source       String
+  eventType    String
+  payload      Json
+  deliveryId   String?
+  processedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, eventType, createdAt])
+}
+
+model Incident {
+  id            String       @id @default(uuid())
+  orgId         String
+  title         String
+  severity      String
+  status        String
+  startedAt     DateTime
+  resolvedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, status, startedAt])
+}
+
+model RiskScore {
+  id            String       @id @default(uuid())
+  orgId         String
+  pullRequestId String       @unique
+  score         Int
+  rationale     String
+  model         String
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  organization  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  pullRequest   PullRequest  @relation(fields: [pullRequestId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+}

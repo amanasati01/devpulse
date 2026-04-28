@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  * {
+    @apply border-white/10;
+  }
+
+  html {
+    @apply bg-[#060816];
+  }
+
+  body {
+    @apply min-h-screen bg-[#060816] text-slate-100 antialiased;
+    background-image:
+      radial-gradient(circle at top, rgba(99, 102, 241, 0.18), transparent 32%),
+      radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.12), transparent 24%),
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: auto, auto, 28px 28px, 28px 28px;
+    background-position: center, center, center, center;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.06) 0.7px, transparent 0.7px);
+    background-size: 20px 20px;
+    mask-image: radial-gradient(circle at center, black, transparent 88%);
+    opacity: 0.14;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply border border-white/10 bg-white/[0.03] backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.05) inset,
+      0 18px 60px rgba(2, 6, 23, 0.35);
+  }
+
+  .gradient-stroke {
+    position: relative;
+  }
+
+  .gradient-stroke::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(129, 140, 248, 0.55), rgba(56, 189, 248, 0.12), rgba(255, 255, 255, 0.04));
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
