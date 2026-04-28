@@ -4,6 +4,8 @@ import { prisma } from "@devpulse/db";
 import { riskScoreSchema } from "@devpulse/lib/src/validation";
 import { scoreRisk } from "@devpulse/lib/src/ai";
 
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.orgId) {

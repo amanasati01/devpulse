@@ -4,6 +4,8 @@ import { prisma } from "@devpulse/db";
 import { summarizePullRequest } from "@devpulse/lib/src/ai";
 import { generatePrSummaryQueue } from "@devpulse/lib/src/queue";
 
+export const runtime = "nodejs";
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: { id: string } }
