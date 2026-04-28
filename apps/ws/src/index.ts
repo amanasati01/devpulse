@@ -1,7 +1,7 @@
 import { WebSocketServer } from "ws";
 import { getRedisClient } from "@devpulse/lib";
 
-const port = Number(process.env.WS_PORT ?? 3001);
+const port = Number(process.env.PORT ?? process.env.WS_PORT ?? 3001);
 const wss = new WebSocketServer({ port });
 const sub = getRedisClient().duplicate();
 

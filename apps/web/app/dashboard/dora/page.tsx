@@ -11,6 +11,7 @@ export default async function DoraPage() {
     orderBy: { capturedAt: "desc" },
     take: 20
   });
+  type DoraSnapshotRow = (typeof rows)[number];
   const latest = rows[0];
 
   return (
@@ -30,7 +31,7 @@ export default async function DoraPage() {
         data={rows
           .slice()
           .reverse()
-          .map((row) => ({
+          .map((row: DoraSnapshotRow) => ({
             capturedAt: row.capturedAt.toISOString(),
             deploymentFrequency: row.deploymentFrequency,
             leadTimeHours: row.leadTimeHours
