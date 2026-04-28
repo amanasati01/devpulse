@@ -4,7 +4,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=@devpulse/web
+    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm db:migrate:deploy && pnpm turbo run build --filter=@devpulse/web
     startCommand: pnpm --filter @devpulse/web start
     autoDeploy: true
     envVars:
@@ -38,7 +38,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=@devpulse/worker
+    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm db:migrate:deploy && pnpm turbo run build --filter=@devpulse/worker
     startCommand: pnpm --filter @devpulse/worker start
     autoDeploy: true
     envVars:
