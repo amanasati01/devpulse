@@ -1,5 +1,5 @@
 import { Job, Worker } from "bullmq";
-import { prisma } from "@devpulse/db";
+import { prisma, type Incident, type PullRequest } from "@devpulse/db";
 import { getRedisClient, scoreRisk, summarizePullRequest } from "@devpulse/lib";
 
 const redis = getRedisClient();
@@ -99,22 +99,22 @@ new Worker(
   "compute-dora",
   async (job: Job<ComputeDoraPayload>) => {
     const orgId = job.data.orgId as string;
-    const prs: Array<{ mergedAt: Date | null; createdAt: Date }> = await prisma.pullRequest.findMany({ where: { orgId } });
-    const incidents: Array<{ resolvedAt: Date | null; startedAt: Date }> = await prisma.incident.findMany({ where: { orgId } });
-    const merged = prs.filter((pr: { mergedAt: Date | null }) => pr.mergedAt);
+    const prs: PullRequest[] = await prisma.pullRequest.findMany({ where: { orgId } });
+    const incidents: Incident[] = await prisma.incident.findMany({ where: { orgId } });
+    const merged = prs.filter((pr: PullRequest) => pr.mergedAt);
     const deploymentFrequency = merged.length;
     const leadTimeHours =
       merged.reduce(
-        (acc: number, pr: { mergedAt: Date | null; createdAt: Date }) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5),
+        (acc: number, pr: PullRequest) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5),
         0
       ) /
       Math.max(merged.length, 1);
     const changeFailureRate = incidents.length / Math.max(merged.length, 1);
     const mttrHours =
-      incidents.reduce((acc: number, i: { resolvedAt: Date | null; startedAt: Date }) => {
+      incidents.reduce((acc: number, i: Incident) => {
         if (!i.resolvedAt) return acc;
         return acc + (i.resolvedAt.getTime() - i.startedAt.getTime()) / 36e5;
-      }, 0) / Math.max(incidents.filter((i: { resolvedAt: Date | null }) => i.resolvedAt).length, 1);
+      }, 0) / Math.max(incidents.filter((i: Incident) => i.resolvedAt).length, 1);
     await prisma.doraSnapshot.create({
       data: { orgId, deploymentFrequency, leadTimeHours, changeFailureRate, mttrHours }
     });
