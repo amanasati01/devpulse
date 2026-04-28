@@ -4,5 +4,4 @@ node_modules
 dist
 .env
 .env.local
-pnpm-lock.yaml
 coverage
