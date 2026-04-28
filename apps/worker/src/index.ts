@@ -1,5 +1,5 @@
 import { Job, Worker } from "bullmq";
-import { prisma, type Incident, type PullRequest } from "@devpulse/db";
+import { prisma } from "@devpulse/db";
 import { getRedisClient, scoreRisk, summarizePullRequest } from "@devpulse/lib";
 
 const redis = getRedisClient();
@@ -24,6 +24,9 @@ type GithubWebhookPayload = {
   pull_request?: GithubPullRequestPayload;
   repository?: { full_name?: string | null } | null;
 };
+
+type PullRequestRecord = Awaited<ReturnType<typeof prisma.pullRequest.findMany>>[number];
+type IncidentRecord = Awaited<ReturnType<typeof prisma.incident.findMany>>[number];
 
 new Worker(
   "process-github-event",
@@ -99,22 +102,22 @@ new Worker(
   "compute-dora",
   async (job: Job<ComputeDoraPayload>) => {
     const orgId = job.data.orgId as string;
-    const prs: PullRequest[] = await prisma.pullRequest.findMany({ where: { orgId } });
-    const incidents: Incident[] = await prisma.incident.findMany({ where: { orgId } });
-    const merged = prs.filter((pr: PullRequest) => pr.mergedAt);
+    const prs: PullRequestRecord[] = await prisma.pullRequest.findMany({ where: { orgId } });
+    const incidents: IncidentRecord[] = await prisma.incident.findMany({ where: { orgId } });
+    const merged = prs.filter((pr: PullRequestRecord) => pr.mergedAt);
     const deploymentFrequency = merged.length;
     const leadTimeHours =
       merged.reduce(
-        (acc: number, pr: PullRequest) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5),
+        (acc: number, pr: PullRequestRecord) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5),
         0
       ) /
       Math.max(merged.length, 1);
     const changeFailureRate = incidents.length / Math.max(merged.length, 1);
     const mttrHours =
-      incidents.reduce((acc: number, i: Incident) => {
+      incidents.reduce((acc: number, i: IncidentRecord) => {
         if (!i.resolvedAt) return acc;
         return acc + (i.resolvedAt.getTime() - i.startedAt.getTime()) / 36e5;
-      }, 0) / Math.max(incidents.filter((i: Incident) => i.resolvedAt).length, 1);
+      }, 0) / Math.max(incidents.filter((i: IncidentRecord) => i.resolvedAt).length, 1);
     await prisma.doraSnapshot.create({
       data: { orgId, deploymentFrequency, leadTimeHours, changeFailureRate, mttrHours }
     });
