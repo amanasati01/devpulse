@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev -p 3000",
-    "build": "dotenv -e ../../.env -- next build",
-    "start": "dotenv -e ../../.env -- next start -p 3000",
+    "build": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- next build; else next build; fi'",
+    "start": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- next start -p ${PORT:-3000}; else next start -p ${PORT:-3000}; fi'",
     "lint": "next lint"
   },
   "dependencies": {

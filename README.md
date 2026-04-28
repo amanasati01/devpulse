@@ -106,3 +106,9 @@ pnpm start
 - `apps/web` is Vercel-compatible.
 - `apps/worker` and `apps/ws` are separate long-running services (deploy on Fly/Render/Kubernetes/VM).
 - No hardcoded secrets; all sensitive values come from env vars.
+- Render blueprint is included at `render.yaml` with 3 services:
+  - `devpulse-web` (Next.js app)
+  - `devpulse-worker` (BullMQ worker)
+  - `devpulse-ws` (WebSocket server)
+- For Render, use `pnpm build:ci` to force uncached, repo-wide builds before startup.
+- Set these env vars on Render (service-level as needed): `DATABASE_URL`, `REDIS_URL`, `AUTH_SECRET` (or `NEXTAUTH_SECRET`), `NEXTAUTH_URL`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_WEBHOOK_SECRET`, `OPENAI_API_KEY`, `NEXT_PUBLIC_WS_URL`.
