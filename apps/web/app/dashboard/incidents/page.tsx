@@ -4,16 +4,44 @@ import { ChartCard } from "@/components/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Topbar } from "@/components/topbar";
 
+type IncidentTimelineItem = {
+  id: string;
+  title: string;
+  severity: string;
+  status: string;
+  startedAt: Date;
+};
+
+type HeatmapCell = {
+  day: number;
+  count: number;
+};
+
+type EngineerLoad = {
+  name: string;
+  load: number;
+};
+
 export default async function IncidentsPage() {
   const session = await auth();
   const incidents = await prisma.incident.findMany({
     where: { orgId: session!.user.orgId },
     orderBy: { startedAt: "desc" }
   });
-  const heatmap = Array.from({ length: 14 }, (_, index) => {
+  const heatmap: HeatmapCell[] = Array.from({ length: 14 }, (_: unknown, index: number) => {
     const incident = incidents[index % Math.max(incidents.length, 1)];
     return { day: index, count: incident ? (incident.severity === "high" ? 4 : 2) : (index % 5 === 0 ? 3 : 1) };
   });
+  const fallbackIncidents: IncidentTimelineItem[] = [
+    { id: "1", title: "API latency spike in review service", severity: "high", status: "open", startedAt: new Date() },
+    { id: "2", title: "Worker retry storm after webhook burst", severity: "medium", status: "monitoring", startedAt: new Date(Date.now() - 36e5) }
+  ];
+  const incidentStream: IncidentTimelineItem[] = incidents.length ? incidents : fallbackIncidents;
+  const engineers: EngineerLoad[] = [
+    { name: "Aman", load: 72 },
+    { name: "Priya", load: 54 },
+    { name: "Jordan", load: 31 }
+  ];
 
   return (
     <section className="space-y-8">
@@ -30,13 +58,7 @@ export default async function IncidentsPage() {
           detail="Newest incidents appear first with severity and active response state."
         >
           <div className="space-y-4">
-            {(incidents.length
-              ? incidents
-              : [
-                  { id: "1", title: "API latency spike in review service", severity: "high", status: "open", startedAt: new Date() },
-                  { id: "2", title: "Worker retry storm after webhook burst", severity: "medium", status: "monitoring", startedAt: new Date(Date.now() - 36e5) }
-                ]
-            ).map((incident) => (
+            {incidentStream.map((incident: IncidentTimelineItem) => (
               <article key={incident.id} className="flex gap-4 rounded-3xl bg-white/[0.03] p-4">
                 <div className="mt-1 h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_0_6px_rgba(251,113,133,0.1)]" />
                 <div className="flex-1">
@@ -61,7 +83,7 @@ export default async function IncidentsPage() {
             detail="Rolling two-week heatmap to show recurring hotspots."
           >
             <div className="grid grid-cols-7 gap-2">
-              {heatmap.map((cell) => (
+              {heatmap.map((cell: HeatmapCell) => (
                 <div
                   key={cell.day}
                   className="aspect-square rounded-2xl"
@@ -78,11 +100,7 @@ export default async function IncidentsPage() {
             detail="Simulated capacity view to surface responders at risk of overload."
           >
             <div className="space-y-3">
-              {[
-                { name: "Aman", load: 72 },
-                { name: "Priya", load: 54 },
-                { name: "Jordan", load: 31 }
-              ].map((engineer) => (
+              {engineers.map((engineer: EngineerLoad) => (
                 <div key={engineer.name} className="rounded-3xl bg-white/[0.03] p-4">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-sm font-medium text-white">{engineer.name}</span>

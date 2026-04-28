@@ -4,7 +4,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm build:ci
+    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=@devpulse/web
     startCommand: pnpm --filter @devpulse/web start
     autoDeploy: true
     envVars:
@@ -38,7 +38,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm build:ci
+    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=@devpulse/worker
     startCommand: pnpm --filter @devpulse/worker start
     autoDeploy: true
     envVars:
@@ -58,7 +58,7 @@ services:
     env: node
     plan: starter
     rootDir: .
-    buildCommand: pnpm install --frozen-lockfile && pnpm build:ci
+    buildCommand: pnpm install --frozen-lockfile && pnpm db:generate && pnpm turbo run build --filter=@devpulse/ws
     startCommand: pnpm --filter @devpulse/ws start
     autoDeploy: true
     envVars:
@@ -66,8 +66,6 @@ services:
         value: production
       - key: REDIS_URL
         sync: false
-      - key: WS_PORT
-        value: "10000"
 
 databases:
   - name: devpulse-postgres
