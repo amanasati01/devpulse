@@ -1,15 +1,36 @@
-import { Worker } from "bullmq";
+import { Job, Worker } from "bullmq";
 import { prisma } from "@devpulse/db";
 import { getRedisClient, scoreRisk, summarizePullRequest } from "@devpulse/lib";
 
 const redis = getRedisClient();
 
+type ProcessGithubPayload = { orgId: string; webhookEventId: string };
+type GenerateSummaryPayload = { orgId: string; pullRequestId: string };
+type ComputeDoraPayload = { orgId: string };
+
+type GithubPullRequestPayload = {
+  number: number;
+  title: string;
+  state: string;
+  additions?: number | null;
+  deletions?: number | null;
+  changed_files?: number | null;
+  merged_at?: string | null;
+  closed_at?: string | null;
+  user?: { login?: string | null } | null;
+};
+
+type GithubWebhookPayload = {
+  pull_request?: GithubPullRequestPayload;
+  repository?: { full_name?: string | null } | null;
+};
+
 new Worker(
   "process-github-event",
-  async (job) => {
+  async (job: Job<ProcessGithubPayload>) => {
     const event = await prisma.webhookEvent.findUnique({ where: { id: job.data.webhookEventId } });
     if (!event) return;
-    const payload = event.payload as any;
+    const payload = event.payload as GithubWebhookPayload;
     if (payload.pull_request) {
       const pr = payload.pull_request;
       const repo = payload.repository?.full_name ?? "unknown/repo";
@@ -53,7 +74,7 @@ new Worker(
 
 new Worker(
   "generate-pr-summary",
-  async (job) => {
+  async (job: Job<GenerateSummaryPayload>) => {
     const pr = await prisma.pullRequest.findUnique({ where: { id: job.data.pullRequestId } });
     if (!pr) return;
     const summary = await summarizePullRequest({
@@ -76,21 +97,24 @@ new Worker(
 
 new Worker(
   "compute-dora",
-  async (job) => {
+  async (job: Job<ComputeDoraPayload>) => {
     const orgId = job.data.orgId as string;
-    const prs = await prisma.pullRequest.findMany({ where: { orgId } });
-    const incidents = await prisma.incident.findMany({ where: { orgId } });
-    const merged = prs.filter((pr) => pr.mergedAt);
+    const prs: Array<{ mergedAt: Date | null; createdAt: Date }> = await prisma.pullRequest.findMany({ where: { orgId } });
+    const incidents: Array<{ resolvedAt: Date | null; startedAt: Date }> = await prisma.incident.findMany({ where: { orgId } });
+    const merged = prs.filter((pr: { mergedAt: Date | null }) => pr.mergedAt);
     const deploymentFrequency = merged.length;
     const leadTimeHours =
-      merged.reduce((acc, pr) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5), 0) /
+      merged.reduce(
+        (acc: number, pr: { mergedAt: Date | null; createdAt: Date }) => acc + ((pr.mergedAt!.getTime() - pr.createdAt.getTime()) / 36e5),
+        0
+      ) /
       Math.max(merged.length, 1);
     const changeFailureRate = incidents.length / Math.max(merged.length, 1);
     const mttrHours =
-      incidents.reduce((acc, i) => {
+      incidents.reduce((acc: number, i: { resolvedAt: Date | null; startedAt: Date }) => {
         if (!i.resolvedAt) return acc;
         return acc + (i.resolvedAt.getTime() - i.startedAt.getTime()) / 36e5;
-      }, 0) / Math.max(incidents.filter((i) => i.resolvedAt).length, 1);
+      }, 0) / Math.max(incidents.filter((i: { resolvedAt: Date | null }) => i.resolvedAt).length, 1);
     await prisma.doraSnapshot.create({
       data: { orgId, deploymentFrequency, leadTimeHours, changeFailureRate, mttrHours }
     });
