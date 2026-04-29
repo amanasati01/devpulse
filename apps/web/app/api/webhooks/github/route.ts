@@ -28,8 +28,9 @@ export async function POST(request: NextRequest) {
   }
 
   const payload = JSON.parse(rawBody) as Record<string, any>;
+  const eventType = headers.data["x-github-event"];
   const orgSlug = payload.organization?.login ?? payload.repository?.owner?.login ?? "default";
-  console.log("[DevPulse] Processing event:", headers.data["x-github-event"], "org:", orgSlug);
+  console.log("[DevPulse] Processing event:", eventType, "org:", orgSlug);
 
   const org = await prisma.organization.upsert({
     where: { slug: orgSlug.toLowerCase() },
@@ -41,24 +42,68 @@ export async function POST(request: NextRequest) {
     data: {
       orgId: org.id,
       source: "github",
-      eventType: headers.data["x-github-event"],
+      eventType,
       payload,
       deliveryId: headers.data["x-github-delivery"]
     }
   });
 
-  // Queue the event for async processing — fire-and-forget so Redis failures
-  // don't prevent the 200 response that GitHub expects.
+  // ── Inline processing: handle pull_request events directly ──
+  // This removes the dependency on Redis + Worker for the critical path.
+  // PRs are created/updated immediately when the webhook fires.
+  if (eventType === "pull_request" && payload.pull_request) {
+    try {
+      const pr = payload.pull_request;
+      const repo = payload.repository?.full_name ?? "unknown/repo";
+      await prisma.pullRequest.upsert({
+        where: {
+          orgId_repo_number: { orgId: org.id, repo, number: pr.number }
+        },
+        update: {
+          title: pr.title,
+          state: pr.state,
+          additions: pr.additions ?? 0,
+          deletions: pr.deletions ?? 0,
+          changedFiles: pr.changed_files ?? 0,
+          mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
+          closedAt: pr.closed_at ? new Date(pr.closed_at) : null
+        },
+        create: {
+          orgId: org.id,
+          repo,
+          number: pr.number,
+          title: pr.title,
+          author: pr.user?.login ?? "unknown",
+          state: pr.state,
+          additions: pr.additions ?? 0,
+          deletions: pr.deletions ?? 0,
+          changedFiles: pr.changed_files ?? 0,
+          mergedAt: pr.merged_at ? new Date(pr.merged_at) : null,
+          closedAt: pr.closed_at ? new Date(pr.closed_at) : null
+        }
+      });
+      console.log("[DevPulse] PR upserted:", repo, "#" + pr.number, pr.title);
+    } catch (err) {
+      console.error("[DevPulse] Failed to upsert PR:", err);
+    }
+  }
+
+  // Mark the event as processed since we handled it inline
+  await prisma.webhookEvent.update({
+    where: { id: event.id },
+    data: { processedAt: new Date() }
+  });
+
+  // Also queue for worker (fire-and-forget) for additional async processing
+  // like AI summaries, DORA metrics, etc.
   try {
     await getProcessGithubEventQueue().add("process", {
       orgId: org.id,
       webhookEventId: event.id
     });
-    console.log("[DevPulse] Queued event for processing:", event.id);
+    console.log("[DevPulse] Queued event for async processing:", event.id);
   } catch (err) {
     console.error("[DevPulse] Failed to enqueue event (Redis issue):", err);
-    // The event is already persisted in the DB — the worker can pick it up later
-    // or we can implement a recovery sweep.
   }
 
   return NextResponse.json({ ok: true });
