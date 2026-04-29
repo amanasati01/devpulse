@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@devpulse/db";
 import { summarizePullRequest } from "@devpulse/lib/src/ai";
-import { generatePrSummaryQueue } from "@devpulse/lib/src/queue";
+import { getGeneratePrSummaryQueue } from "@devpulse/lib/src/queue";
 
 export const runtime = "nodejs";
 
@@ -22,7 +22,7 @@ export async function POST(
     return NextResponse.json({ error: "PR not found" }, { status: 404 });
   }
 
-  await generatePrSummaryQueue.add("summary", { orgId: pr.orgId, pullRequestId: pr.id });
+  await getGeneratePrSummaryQueue().add("summary", { orgId: pr.orgId, pullRequestId: pr.id });
   const summary = await summarizePullRequest({
     title: pr.title,
     repo: pr.repo,

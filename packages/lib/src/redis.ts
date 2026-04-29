@@ -4,7 +4,17 @@ let _redis: IORedis | undefined;
 
 export function getRedisClient() {
   if (!_redis) {
-    _redis = new IORedis(process.env.REDIS_URL!, { maxRetriesPerRequest: null });
+    const url = process.env.REDIS_URL!;
+    const useTls = url.startsWith("rediss://");
+
+    _redis = new IORedis(url, {
+      maxRetriesPerRequest: null,
+      ...(useTls ? { tls: {} } : {})
+    });
+
+    _redis.on("error", (err) => {
+      console.error("[DevPulse] Redis connection error:", err.message);
+    });
   }
   return _redis;
 }
