@@ -16,7 +16,7 @@ export default function HomePage() {
             View Demo
           </Link>
           <Button asChild variant="primary" className="bg-white text-slate-950 hover:bg-slate-200">
-            <Link href="/api/auth/signin">Sign in with GitHub</Link>
+            <a href="/api/auth/signin">Sign in with GitHub</a>
           </Button>
         </div>
       </header>
@@ -39,7 +39,7 @@ export default function HomePage() {
             </p>
             <div className="mt-10 flex items-center justify-center gap-4">
               <Button asChild className="h-12 px-8 text-base bg-indigo-500 hover:bg-indigo-600 shadow-lg shadow-indigo-500/20">
-                <Link href="/api/auth/signin">Get Started for Free</Link>
+                <a href="/api/auth/signin">Get Started for Free</a>
               </Button>
               <Button asChild variant="ghost" className="h-12 px-8 text-base border border-white/10 hover:bg-white/5">
                 <Link href="/demo">Explore the Demo</Link>
