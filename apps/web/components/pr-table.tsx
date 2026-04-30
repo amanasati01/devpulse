@@ -24,12 +24,37 @@ type PR = {
   } | null;
 };
 
-export function PRTable({ prs }: { prs: PR[] }) {
+const DEMO_SUMMARIES: Record<string, string> = {
+  "1": "This PR restructures the billing page to support multi-currency rendering. Core changes hit the CurrencyFormatter utility, PaymentSummary component, and the /api/billing/calculate endpoint. High risk: any regression here directly affects revenue flow. Recommend review by a backend engineer familiar with Stripe integration. Deploy behind a feature flag and validate in staging with EUR and GBP test accounts before production rollout.",
+  "2": "Addresses a rare race condition in the token refresh logic where concurrent requests could invalidate the rotation secret. Fixed by implementing a 10s grace period for old secrets. Low operational risk but critical for session stability.",
+  "3": "Routine dependency update targeting security patches for the frontend stack. Includes minor version bumps for Radix UI and Framer Motion. Automated tests passed, no breaking changes identified."
+};
+
+export function PRTable({ prs, isDemo }: { prs: PR[]; isDemo?: boolean }) {
   const [rows, setRows] = useState(prs);
   const [loading, setLoading] = useState<Record<string, string>>({});
   const [expanded, setExpanded] = useState<string | null>(rows[0]?.id ?? null);
 
   async function runSummary(prId: string) {
+    if (isDemo) {
+      setLoading((prev) => ({ ...prev, [prId]: "summary" }));
+      const fullText = DEMO_SUMMARIES[prId] || "Demo summary generated.";
+      
+      // Clear previous
+      setRows((prev) => prev.map((row) => (row.id === prId ? { ...row, summary: "" } : row)));
+      
+      let currentText = "";
+      for (let i = 0; i < fullText.length; i++) {
+        currentText += fullText[i];
+        const text = currentText;
+        setRows((prev) => prev.map((row) => (row.id === prId ? { ...row, summary: text } : row)));
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      
+      setLoading((prev) => ({ ...prev, [prId]: "" }));
+      return;
+    }
+
     setLoading((prev) => ({ ...prev, [prId]: "summary" }));
     try {
       const response = await fetch(`/api/prs/${prId}/summary`, { method: "POST" });
@@ -133,9 +158,12 @@ export function PRTable({ prs }: { prs: PR[] }) {
               {isExpanded ? (
                 <div className="mt-4 grid gap-4 border-t border-white/10 pt-4 lg:grid-cols-[1.2fr_0.8fr]">
                   <div className="rounded-3xl bg-slate-950/50 p-4">
-                    <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white">
-                      <Sparkles className="h-4 w-4 text-sky-300" />
-                      AI summary
+                    <div className="mb-3 flex items-center justify-between text-sm font-medium text-white">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-sky-300" />
+                        AI summary
+                      </div>
+                      {isDemo && <Badge variant="neutral">Demo simulation</Badge>}
                     </div>
                     <p className="text-sm leading-7 text-slate-300">
                       {pr.summary ??

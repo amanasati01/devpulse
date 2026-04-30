@@ -13,9 +13,11 @@ export default function DemoPullRequestsPage() {
       authorAvatarUrl: "https://avatars.githubusercontent.com/u/1?v=4",
       additions: 1420,
       deletions: 340,
+      changedFiles: 23,
       createdAt: new Date(),
       updatedAt: new Date(),
       orgId: "demo",
+      summary: null,
       riskScore: { score: 85, rationale: "Massive changes to core billing components." }
     },
     {
@@ -28,9 +30,11 @@ export default function DemoPullRequestsPage() {
       authorAvatarUrl: "https://avatars.githubusercontent.com/u/2?v=4",
       additions: 45,
       deletions: 12,
+      changedFiles: 4,
       createdAt: new Date(Date.now() - 86400000),
       updatedAt: new Date(Date.now() - 40000000),
       orgId: "demo",
+      summary: null,
       riskScore: { score: 62, rationale: "Touches critical auth paths but isolated." }
     },
     {
@@ -43,9 +47,11 @@ export default function DemoPullRequestsPage() {
       authorAvatarUrl: "https://avatars.githubusercontent.com/in/29110?v=4",
       additions: 12,
       deletions: 12,
+      changedFiles: 12,
       createdAt: new Date(Date.now() - 172800000),
       updatedAt: new Date(Date.now() - 172800000),
       orgId: "demo",
+      summary: null,
       riskScore: null
     }
   ];
@@ -58,7 +64,7 @@ export default function DemoPullRequestsPage() {
         userLabel="Guest"
       />
       {/* @ts-ignore */}
-      <PRTable prs={prs} />
+      <PRTable prs={prs} isDemo={true} />
     </section>
   );
 }

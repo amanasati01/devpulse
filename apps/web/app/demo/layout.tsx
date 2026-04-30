@@ -1,4 +1,5 @@
 import { AppSidebarDemo } from "@/components/app-sidebar-demo";
+import { DemoBanner } from "@/components/demo-banner";
 import { ReactNode } from "react";
 
 export default function DemoLayout({ children }: { children: ReactNode }) {
@@ -25,6 +26,7 @@ export default function DemoLayout({ children }: { children: ReactNode }) {
           {children}
         </div>
       </main>
+      <DemoBanner />
     </div>
   );
 }

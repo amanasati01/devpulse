@@ -1,6 +1,8 @@
 import { DoraChart } from "@/components/dora-chart";
 import { MetricCard } from "@/components/metric-card";
 import { Topbar } from "@/components/topbar";
+import { ChartCard } from "@/components/chart-card";
+import { DoraMomentumChart } from "@/components/dora-momentum-chart";
 
 export default function DemoDoraPage() {
   const latest = {
@@ -41,6 +43,14 @@ export default function DemoDoraPage() {
             leadTimeHours: row.leadTimeHours
           }))}
       />
+
+      <ChartCard
+        eyebrow="Momentum"
+        title="DORA momentum"
+        detail="Visualizing the inverse relationship between lead time and deployment frequency over the last 8 engineering cycles."
+      >
+        <DoraMomentumChart />
+      </ChartCard>
     </section>
   );
 }

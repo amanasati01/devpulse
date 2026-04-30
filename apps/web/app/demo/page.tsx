@@ -52,7 +52,7 @@ export default function DemoPage() {
             highlight
           />
         </div>
-        <RealtimeFeed />
+        <RealtimeFeed isDemo={true} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_0.9fr]">

@@ -1,4 +1,5 @@
-import { Search, Sparkles } from "lucide-react";
+import { Github, Search, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export function Topbar({
   title,
@@ -18,9 +19,17 @@ export function Topbar({
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="glass-panel flex min-w-[260px] items-center gap-3 rounded-2xl px-4 py-3">
+        <Link 
+          href="https://github.com/khanblair/devpulse" 
+          target="_blank"
+          className="glass-panel flex h-12 items-center gap-3 rounded-2xl px-5 py-3 transition hover:bg-white/[0.08]"
+        >
+          <Github className="h-4 w-4 text-slate-400" />
+          <span className="text-sm font-medium text-slate-200">Source</span>
+        </Link>
+        <div className="glass-panel flex h-12 min-w-[260px] items-center gap-3 rounded-2xl px-4 py-3">
           <Search className="h-4 w-4 text-slate-500" />
-          <span className="text-sm text-slate-500">Search PRs, incidents, engineers</span>
+          <span className="text-sm text-slate-500">Search PRs...</span>
         </div>
         <div className="glass-panel flex items-center gap-3 rounded-2xl px-4 py-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-sky-400 text-white">
