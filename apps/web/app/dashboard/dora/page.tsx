@@ -22,21 +22,27 @@ export default async function DoraPage() {
         userLabel={session?.user?.name ?? session?.user?.email}
       />
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Deploy frequency" value={latest ? latest.deploymentFrequency.toFixed(1) : "16.0"} delta="+6.2%" hint="Average releases per cycle" />
-        <MetricCard label="Lead time" value={latest ? `${latest.leadTimeHours.toFixed(1)}h` : "8.4h"} delta="-12%" hint="Commit to production latency" />
-        <MetricCard label="Change failure rate" value={latest ? `${(latest.changeFailureRate * 100).toFixed(0)}%` : "7%"} delta="-2 pts" hint="Stable releases with lower rollback exposure" />
-        <MetricCard label="MTTR" value={latest ? `${latest.mttrHours.toFixed(1)}h` : "1.4h"} delta="-18%" hint="Faster recovery on incidents" />
+        <MetricCard label="Deploy frequency" value={latest ? latest.deploymentFrequency.toFixed(1) : "N/A"} delta="-" hint="Average releases per cycle" />
+        <MetricCard label="Lead time" value={latest ? `${latest.leadTimeHours.toFixed(1)}h` : "N/A"} delta="-" hint="Commit to production latency" />
+        <MetricCard label="Change failure rate" value={latest ? `${(latest.changeFailureRate * 100).toFixed(0)}%` : "N/A"} delta="-" hint="Stable releases with lower rollback exposure" />
+        <MetricCard label="MTTR" value={latest ? `${latest.mttrHours.toFixed(1)}h` : "N/A"} delta="-" hint="Faster recovery on incidents" />
       </div>
-      <DoraChart
-        data={rows
-          .slice()
-          .reverse()
-          .map((row: DoraSnapshotRow) => ({
-            capturedAt: row.capturedAt.toISOString(),
-            deploymentFrequency: row.deploymentFrequency,
-            leadTimeHours: row.leadTimeHours
-          }))}
-      />
+      {rows.length > 0 ? (
+        <DoraChart
+          data={rows
+            .slice()
+            .reverse()
+            .map((row: DoraSnapshotRow) => ({
+              capturedAt: row.capturedAt.toISOString(),
+              deploymentFrequency: row.deploymentFrequency,
+              leadTimeHours: row.leadTimeHours
+            }))}
+        />
+      ) : (
+        <div className="flex h-64 items-center justify-center rounded-3xl border border-dashed border-white/10 bg-white/[0.01]">
+          <p className="text-sm text-slate-500">No DORA snapshots captured yet.</p>
+        </div>
+      )}
     </section>
   );
 }

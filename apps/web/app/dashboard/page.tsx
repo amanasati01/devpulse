@@ -32,21 +32,9 @@ export default async function DashboardPage() {
   const averageRisk = riskScores.length
     ? Math.round(riskScores.reduce((sum: number, item: RiskCard) => sum + item.score, 0) / riskScores.length)
     : 64;
-  const trend = (latestSnapshot?.deploymentFrequency ?? 12).toFixed(1);
-  const snapshotCards: SnapshotCard[] = snapshots.length
-    ? snapshots
-    : [
-        { id: "a", deploymentFrequency: 16, leadTimeHours: 8.5, changeFailureRate: 0.11, mttrHours: 1.9 },
-        { id: "b", deploymentFrequency: 14, leadTimeHours: 10.2, changeFailureRate: 0.07, mttrHours: 1.5 },
-        { id: "c", deploymentFrequency: 18, leadTimeHours: 7.6, changeFailureRate: 0.05, mttrHours: 1.2 }
-      ];
-  const riskCards: RiskCard[] = riskScores.length
-    ? riskScores
-    : [
-        { id: "1", score: 82, rationale: "Infrastructure and rollout paths changed in one PR." },
-        { id: "2", score: 68, rationale: "Touches auth middleware and background jobs." },
-        { id: "3", score: 41, rationale: "Mostly presentational updates with bounded blast radius." }
-      ];
+  const trend = latestSnapshot?.deploymentFrequency ? latestSnapshot.deploymentFrequency.toFixed(1) : "N/A";
+  const snapshotCards: SnapshotCard[] = snapshots;
+  const riskCards: RiskCard[] = riskScores;
 
   return (
     <section className="space-y-8">
@@ -58,23 +46,23 @@ export default async function DashboardPage() {
 
       <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Open pull requests" value={String(prs)} delta="+12%" hint="Healthy flow with review capacity available this morning." />
+          <MetricCard label="Open pull requests" value={String(prs)} delta={prs > 0 ? "Active" : "-"} hint="Healthy flow with review capacity available this morning." />
           <MetricCard
             label="Open incidents"
             value={String(incidents)}
-            delta={incidents > 0 ? "+3 active" : "Stable"}
+            delta={incidents > 0 ? `${incidents} active` : "-"}
             hint="Cross-team reliability signal, weighted by unresolved severity."
           />
           <MetricCard
             label="Deploy frequency"
             value={trend}
-            delta="+8.4%"
+            delta="-"
             hint="Rolling release cadence over the latest engineering cycle."
           />
           <MetricCard
             label="AI risk score"
-            value={`${averageRisk}/100`}
-            delta={averageRisk > 70 ? "Watchlist" : "Controlled"}
+            value={riskScores.length ? `${averageRisk}/100` : "N/A"}
+            delta={riskScores.length && averageRisk > 70 ? "Watchlist" : "-"}
             hint="Model-estimated delivery risk across your newest pull requests."
             highlight
           />
@@ -89,15 +77,19 @@ export default async function DashboardPage() {
           detail="Lead time, merge velocity, and change stability synthesized from DORA snapshots."
         >
           <div className="grid gap-3 md:grid-cols-3">
-            {snapshotCards.map((snapshot: SnapshotCard, index: number) => (
-              <div key={snapshot.id ?? index} className="rounded-3xl bg-white/[0.03] p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Cycle {index + 1}</p>
-                <div className="mt-4 text-3xl font-semibold text-white">{Number(snapshot.deploymentFrequency).toFixed(1)}</div>
-                <p className="mt-2 text-sm text-slate-400">
-                  {Number(snapshot.leadTimeHours).toFixed(1)}h lead time, {(Number(snapshot.changeFailureRate) * 100).toFixed(0)}% failure rate
-                </p>
-              </div>
-            ))}
+            {snapshotCards.length > 0 ? (
+              snapshotCards.map((snapshot: SnapshotCard, index: number) => (
+                <div key={snapshot.id ?? index} className="rounded-3xl bg-white/[0.03] p-4">
+                  <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Cycle {index + 1}</p>
+                  <div className="mt-4 text-3xl font-semibold text-white">{Number(snapshot.deploymentFrequency).toFixed(1)}</div>
+                  <p className="mt-2 text-sm text-slate-400">
+                    {Number(snapshot.leadTimeHours).toFixed(1)}h lead time, {(Number(snapshot.changeFailureRate) * 100).toFixed(0)}% failure rate
+                  </p>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-3 py-4 text-sm text-slate-500">No DORA snapshots captured yet.</div>
+            )}
           </div>
         </ChartCard>
 
@@ -107,15 +99,19 @@ export default async function DashboardPage() {
           detail="Use this shortlist to drive review focus before deployment windows."
         >
           <div className="space-y-3">
-            {riskCards.map((risk: RiskCard) => (
-              <div key={risk.id} className="rounded-3xl bg-white/[0.03] p-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-white">Risk {risk.id.slice(0, 6)}</p>
-                  <span className="rounded-full bg-indigo-400/10 px-3 py-1 text-xs text-indigo-300">{risk.score}/100</span>
+            {riskCards.length > 0 ? (
+              riskCards.map((risk: RiskCard) => (
+                <div key={risk.id} className="rounded-3xl bg-white/[0.03] p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-white">Risk {risk.id.slice(0, 6)}</p>
+                    <span className="rounded-full bg-indigo-400/10 px-3 py-1 text-xs text-indigo-300">{risk.score}/100</span>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{risk.rationale}</p>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{risk.rationale}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className="py-4 text-sm text-slate-500">No PRs have been scored by AI yet.</div>
+            )}
           </div>
         </ChartCard>
       </div>

@@ -29,19 +29,12 @@ export default async function IncidentsPage() {
     orderBy: { startedAt: "desc" }
   });
   const heatmap: HeatmapCell[] = Array.from({ length: 14 }, (_: unknown, index: number) => {
+    if (incidents.length === 0) return { day: index, count: 0 };
     const incident = incidents[index % Math.max(incidents.length, 1)];
     return { day: index, count: incident ? (incident.severity === "high" ? 4 : 2) : (index % 5 === 0 ? 3 : 1) };
   });
-  const fallbackIncidents: IncidentTimelineItem[] = [
-    { id: "1", title: "API latency spike in review service", severity: "high", status: "open", startedAt: new Date() },
-    { id: "2", title: "Worker retry storm after webhook burst", severity: "medium", status: "monitoring", startedAt: new Date(Date.now() - 36e5) }
-  ];
-  const incidentStream: IncidentTimelineItem[] = incidents.length ? incidents : fallbackIncidents;
-  const engineers: EngineerLoad[] = [
-    { name: "Aman", load: 72 },
-    { name: "Priya", load: 54 },
-    { name: "Jordan", load: 31 }
-  ];
+  const incidentStream: IncidentTimelineItem[] = incidents;
+  const engineers: EngineerLoad[] = [];
 
   return (
     <section className="space-y-8">
@@ -58,21 +51,25 @@ export default async function IncidentsPage() {
           detail="Newest incidents appear first with severity and active response state."
         >
           <div className="space-y-4">
-            {incidentStream.map((incident: IncidentTimelineItem) => (
-              <article key={incident.id} className="flex gap-4 rounded-3xl bg-white/[0.03] p-4">
-                <div className="mt-1 h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_0_6px_rgba(251,113,133,0.1)]" />
-                <div className="flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="font-medium text-white">{incident.title}</h2>
-                    <Badge variant={incident.severity === "high" ? "danger" : "warning"}>{incident.severity}</Badge>
-                    <Badge variant={incident.status === "open" ? "info" : "neutral"}>{incident.status}</Badge>
+            {incidentStream.length > 0 ? (
+              incidentStream.map((incident: IncidentTimelineItem) => (
+                <article key={incident.id} className="flex gap-4 rounded-3xl bg-white/[0.03] p-4">
+                  <div className="mt-1 h-3 w-3 rounded-full bg-rose-400 shadow-[0_0_0_6px_rgba(251,113,133,0.1)]" />
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="font-medium text-white">{incident.title}</h2>
+                      <Badge variant={incident.severity === "high" ? "danger" : "warning"}>{incident.severity}</Badge>
+                      <Badge variant={incident.status === "open" ? "info" : "neutral"}>{incident.status}</Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-400">
+                      Started {new Date(incident.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm text-slate-400">
-                    Started {new Date(incident.startedAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
-              </article>
-            ))}
+                </article>
+              ))
+            ) : (
+              <div className="py-8 text-center text-sm text-slate-500">No active incidents.</div>
+            )}
           </div>
         </ChartCard>
 
@@ -100,17 +97,21 @@ export default async function IncidentsPage() {
             detail="Simulated capacity view to surface responders at risk of overload."
           >
             <div className="space-y-3">
-              {engineers.map((engineer: EngineerLoad) => (
-                <div key={engineer.name} className="rounded-3xl bg-white/[0.03] p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">{engineer.name}</span>
-                    <span className="text-xs text-slate-400">{engineer.load}% engaged</span>
+              {engineers.length > 0 ? (
+                engineers.map((engineer: EngineerLoad) => (
+                  <div key={engineer.name} className="rounded-3xl bg-white/[0.03] p-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-sm font-medium text-white">{engineer.name}</span>
+                      <span className="text-xs text-slate-400">{engineer.load}% engaged</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-white/[0.05]">
+                      <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400" style={{ width: `${engineer.load}%` }} />
+                    </div>
                   </div>
-                  <div className="h-2 rounded-full bg-white/[0.05]">
-                    <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400" style={{ width: `${engineer.load}%` }} />
-                  </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div className="py-4 text-sm text-slate-500">No on-call data available.</div>
+              )}
             </div>
           </ChartCard>
         </div>
