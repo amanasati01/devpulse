@@ -38,7 +38,7 @@ export function DemoBanner() {
               <div>
                 <p className="text-sm font-medium text-white">This is a live demo with simulated data.</p>
                 <p className="text-xs text-slate-400">
-                  <Link href="/api/auth/signin" className="text-indigo-400 hover:underline">Sign in with GitHub</Link> to connect your real repositories.
+                  <a href="/api/auth/signin" className="text-indigo-400 hover:underline">Sign in with GitHub</a> to connect your real repositories.
                 </p>
               </div>
             </div>
