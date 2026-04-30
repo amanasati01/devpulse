@@ -5,8 +5,8 @@
   "scripts": {
     "dev": "dotenv -e .env -- turbo run dev",
     "prebuild": "pnpm db:generate",
-    "build": "turbo run build",
-    "build:ci": "pnpm db:generate && pnpm turbo run build --force",
+    "build": "pnpm db:migrate:deploy && turbo run build",
+    "build:ci": "pnpm db:generate && pnpm db:migrate:deploy && pnpm turbo run build --force",
     "start": "pnpm --filter @devpulse/web start",
     "worker": "pnpm --filter @devpulse/worker dev",
     "ws": "pnpm --filter @devpulse/ws dev",
