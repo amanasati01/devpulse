@@ -3,9 +3,11 @@ import { clsx } from "clsx";
 
 export function Badge({
   children,
+  className,
   variant = "neutral"
 }: {
   children: ReactNode;
+  className?: string;
   variant?: "neutral" | "success" | "warning" | "danger" | "info";
 }) {
   return (
@@ -16,7 +18,8 @@ export function Badge({
         variant === "success" && "bg-emerald-500/10 text-emerald-300 ring-emerald-400/20",
         variant === "warning" && "bg-amber-500/10 text-amber-300 ring-amber-400/20",
         variant === "danger" && "bg-rose-500/10 text-rose-300 ring-rose-400/20",
-        variant === "info" && "bg-sky-500/10 text-sky-300 ring-sky-400/20"
+        variant === "info" && "bg-sky-500/10 text-sky-300 ring-sky-400/20",
+        className
       )}
     >
       {children}

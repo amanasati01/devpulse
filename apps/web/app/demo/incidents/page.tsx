@@ -1,6 +1,9 @@
 import { ChartCard } from "@/components/chart-card";
 import { Badge } from "@/components/ui/badge";
 import { Topbar } from "@/components/topbar";
+import { IncidentHeatmap } from "@/components/incident-heatmap";
+import { AlertTriangle } from "lucide-react";
+import { clsx } from "clsx";
 
 export default function DemoIncidentsPage() {
   const incidentStream = [
@@ -9,14 +12,10 @@ export default function DemoIncidentsPage() {
     { id: "3", title: "Database connection pool exhausted", severity: "high", status: "resolved", startedAt: new Date(Date.now() - 86400000) }
   ];
 
-  const heatmap = Array.from({ length: 14 }, (_, index) => {
-    return { day: index, count: index % 5 === 0 ? 3 : index % 3 === 0 ? 1 : 0 };
-  });
-
   const engineers = [
-    { name: "Aman", load: 72 },
-    { name: "Priya", load: 54 },
-    { name: "Jordan", load: 31 }
+    { name: "Aman", load: 72, status: "overloaded" },
+    { name: "Priya", load: 54, status: "watch" },
+    { name: "Jordan", load: 31, status: "healthy" }
   ];
 
   return (
@@ -56,34 +55,49 @@ export default function DemoIncidentsPage() {
           <ChartCard
             eyebrow="Heatmap"
             title="Incident frequency"
-            detail="Rolling two-week heatmap to show recurring hotspots."
+            detail="Rolling two-week heatmap showing hotspots (Mon-Sun)."
           >
-            <div className="grid grid-cols-7 gap-2">
-              {heatmap.map((cell) => (
-                <div
-                  key={cell.day}
-                  className="aspect-square rounded-2xl"
-                  style={{ backgroundColor: `rgba(99,102,241,${0.08 + cell.count * 0.12})` }}
-                  title={`Day ${cell.day + 1}: ${cell.count} incidents`}
-                />
-              ))}
-            </div>
+            <IncidentHeatmap />
           </ChartCard>
 
           <ChartCard
             eyebrow="Workload"
             title="On-call load"
-            detail="Simulated capacity view to surface responders at risk of overload."
+            detail="Realtime capacity view to surface responders at risk of burnout."
           >
-            <div className="space-y-3">
+            <div className="space-y-5">
               {engineers.map((engineer) => (
-                <div key={engineer.name} className="rounded-3xl bg-white/[0.03] p-4">
+                <div key={engineer.name} className="group relative">
                   <div className="mb-2 flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">{engineer.name}</span>
-                    <span className="text-xs text-slate-400">{engineer.load}% engaged</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-white">{engineer.name}</span>
+                      {engineer.status === "overloaded" && (
+                        <div className="relative group/tooltip">
+                          <AlertTriangle className="h-4 w-4 text-rose-400 animate-pulse cursor-help" />
+                          <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover/tooltip:block w-48 rounded-xl bg-slate-900 border border-white/10 p-2 text-[10px] text-slate-300 shadow-2xl z-50">
+                            Engineer at risk of burnout. Consider redistributing load.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <span className={clsx(
+                      "text-[10px] font-bold uppercase tracking-wider",
+                      engineer.status === "overloaded" ? "text-rose-400" : 
+                      engineer.status === "watch" ? "text-amber-400" : "text-emerald-400"
+                    )}>
+                      {engineer.load}% capacity
+                    </span>
                   </div>
-                  <div className="h-2 rounded-full bg-white/[0.05]">
-                    <div className="h-2 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400" style={{ width: `${engineer.load}%` }} />
+                  <div className="h-2.5 overflow-hidden rounded-full bg-white/[0.05]">
+                    <div 
+                      className={clsx(
+                        "h-full rounded-full transition-all duration-1000 ease-out",
+                        engineer.status === "overloaded" ? "bg-gradient-to-r from-rose-500 to-rose-400" :
+                        engineer.status === "watch" ? "bg-gradient-to-r from-amber-500 to-amber-400" :
+                        "bg-gradient-to-r from-emerald-500 to-emerald-400"
+                      )}
+                      style={{ width: `${engineer.load}%` }}
+                    />
                   </div>
                 </div>
               ))}
