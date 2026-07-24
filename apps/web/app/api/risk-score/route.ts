@@ -4,6 +4,7 @@ import { prisma } from "@devpulse/db";
 import { riskScoreSchema } from "@devpulse/lib/src/validation";
 import { scoreRisk } from "@devpulse/lib/src/ai";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {

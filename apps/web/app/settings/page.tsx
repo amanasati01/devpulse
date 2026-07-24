@@ -2,6 +2,8 @@ import { auth, signOut } from "@/auth";
 import { Topbar } from "@/components/topbar";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const session = await auth();
 

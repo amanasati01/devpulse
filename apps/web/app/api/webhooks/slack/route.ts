@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@devpulse/db";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   const payload = (await request.json()) as Record<string, any>;
   const orgSlug = (payload.team_domain ?? "slack-default").toLowerCase();
