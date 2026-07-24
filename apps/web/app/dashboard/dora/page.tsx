@@ -4,13 +4,18 @@ import { DoraChart } from "@/components/dora-chart";
 import { MetricCard } from "@/components/metric-card";
 import { Topbar } from "@/components/topbar";
 
+export const dynamic = "force-dynamic";
+
 export default async function DoraPage() {
   const session = await auth();
-  const rows = await prisma.doraSnapshot.findMany({
-    where: { orgId: session!.user.orgId },
-    orderBy: { capturedAt: "desc" },
-    take: 20
-  });
+  const orgId = session?.user?.orgId ?? "";
+  const rows = orgId
+    ? await prisma.doraSnapshot.findMany({
+        where: { orgId },
+        orderBy: { capturedAt: "desc" },
+        take: 20
+      })
+    : [];
   type DoraSnapshotRow = (typeof rows)[number];
   const latest = rows[0];
 

@@ -3,21 +3,27 @@ import { prisma } from "@devpulse/db";
 import { PRTable } from "@/components/pr-table";
 import { Topbar } from "@/components/topbar";
 
+export const dynamic = "force-dynamic";
+
 export default async function PullRequestsPage() {
   const session = await auth();
-  const prs = await prisma.pullRequest.findMany({
-    where: { orgId: session!.user.orgId },
-    orderBy: { createdAt: "desc" },
-    take: 50,
-    include: {
-      riskScore: {
-        select: {
-          score: true,
-          rationale: true
+  const orgId = session?.user?.orgId ?? "";
+  const prs = orgId
+    ? await prisma.pullRequest.findMany({
+        where: { orgId },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        include: {
+          riskScore: {
+            select: {
+              score: true,
+              rationale: true
+            }
+          }
         }
-      }
-    }
-  });
+      })
+    : [];
+
   return (
     <section className="space-y-8">
       <Topbar

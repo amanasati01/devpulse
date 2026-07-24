@@ -22,12 +22,17 @@ type EngineerLoad = {
   load: number;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function IncidentsPage() {
   const session = await auth();
-  const incidents = await prisma.incident.findMany({
-    where: { orgId: session!.user.orgId },
-    orderBy: { startedAt: "desc" }
-  });
+  const orgId = session?.user?.orgId ?? "";
+  const incidents = orgId
+    ? await prisma.incident.findMany({
+        where: { orgId },
+        orderBy: { startedAt: "desc" }
+      })
+    : [];
   const heatmap: HeatmapCell[] = Array.from({ length: 14 }, (_: unknown, index: number) => {
     if (incidents.length === 0) return { day: index, count: 0 };
     const incident = incidents[index % Math.max(incidents.length, 1)];

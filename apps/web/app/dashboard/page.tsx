@@ -23,13 +23,16 @@ type RiskCard = {
 
 export default async function DashboardPage() {
   const session = await auth();
-  const orgId = session!.user.orgId;
-  const [prs, incidents, snapshots, riskScores] = await Promise.all([
-    prisma.pullRequest.count({ where: { orgId } }),
-    prisma.incident.count({ where: { orgId, status: "open" } }),
-    prisma.doraSnapshot.findMany({ where: { orgId }, orderBy: { capturedAt: "desc" }, take: 6 }),
-    prisma.riskScore.findMany({ where: { orgId }, orderBy: { updatedAt: "desc" }, take: 5 })
-  ]);
+  const orgId = session?.user?.orgId ?? "";
+  const [prs, incidents, snapshots, riskScores] = orgId
+    ? await Promise.all([
+        prisma.pullRequest.count({ where: { orgId } }),
+        prisma.incident.count({ where: { orgId, status: "open" } }),
+        prisma.doraSnapshot.findMany({ where: { orgId }, orderBy: { capturedAt: "desc" }, take: 6 }),
+        prisma.riskScore.findMany({ where: { orgId }, orderBy: { updatedAt: "desc" }, take: 5 })
+      ])
+    : [0, 0, [], []];
+
   const latestSnapshot = snapshots[0];
   const averageRisk = riskScores.length
     ? Math.round(riskScores.reduce((sum: number, item: RiskCard) => sum + item.score, 0) / riskScores.length)

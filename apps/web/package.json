@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "dotenv -e ../../.env -- next dev -p 3000",
-    "build": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- next build; else next build; fi'",
+    "postinstall": "pnpm --filter @devpulse/db prisma:generate",
+    "build": "pnpm --filter @devpulse/db prisma:generate && sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- next build; else next build; fi'",
     "start": "sh -c 'if [ -f ../../.env ]; then dotenv -e ../../.env -- next start -p ${PORT:-3000}; else next start -p ${PORT:-3000}; fi'",
     "lint": "next lint"
   },
