@@ -24,37 +24,42 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async jwt({ token, account, profile }) {
       if (account?.provider === "github" && profile) {
-        const githubId = String(profile.id);
-        const email = token.email ?? `${githubId}@users.noreply.github.com`;
-        
-        // Use the GitHub username (login) as the org slug to match webhooks perfectly
-        const orgSlug = profile.login ? (profile.login as string).toLowerCase() : `org-${githubId}`;
-        
-        let org = await prisma.organization.findUnique({ where: { slug: orgSlug } });
-        if (!org) {
-          org = await prisma.organization.create({
-            data: { name: `${profile.name ?? profile.login ?? "DevPulse"} Org`, slug: orgSlug }
-          });
-        }
-        await prisma.user.upsert({
-          where: { githubId },
-          update: {
-            orgId: org.id,
-            githubToken: account.access_token,
-            name: (profile.name as string | undefined) ?? null,
-            avatarUrl: (profile.avatar_url as string | undefined) ?? null
-          },
-          create: {
-            orgId: org.id,
-            githubId,
-            email,
-            githubToken: account.access_token,
-            name: (profile.name as string | undefined) ?? null,
-            avatarUrl: (profile.avatar_url as string | undefined) ?? null
+        try {
+          const githubId = String(profile.id);
+          const email = token.email ?? `${githubId}@users.noreply.github.com`;
+          
+          // Use the GitHub username (login) as the org slug to match webhooks perfectly
+          const orgSlug = profile.login ? (profile.login as string).toLowerCase() : `org-${githubId}`;
+          
+          let org = await prisma.organization.findUnique({ where: { slug: orgSlug } });
+          if (!org) {
+            org = await prisma.organization.create({
+              data: { name: `${profile.name ?? profile.login ?? "DevPulse"} Org`, slug: orgSlug }
+            });
           }
-        });
-        token.orgId = org.id;
-        token.githubAccessToken = account.access_token;
+          await prisma.user.upsert({
+            where: { githubId },
+            update: {
+              orgId: org.id,
+              githubToken: account.access_token,
+              name: (profile.name as string | undefined) ?? null,
+              avatarUrl: (profile.avatar_url as string | undefined) ?? null
+            },
+            create: {
+              orgId: org.id,
+              githubId,
+              email,
+              githubToken: account.access_token,
+              name: (profile.name as string | undefined) ?? null,
+              avatarUrl: (profile.avatar_url as string | undefined) ?? null
+            }
+          });
+          token.orgId = org.id;
+          token.githubAccessToken = account.access_token;
+        } catch (err) {
+          console.error("[DevPulse Auth Error in JWT callback]:", err);
+          throw err;
+        }
       }
       return token;
     },
