@@ -1,5 +1,4 @@
-import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { NextResponse, type NextRequest } from "next/server";
 import { Redis } from "@upstash/redis/cloudflare";
 
 const upstashRedis =
@@ -12,7 +11,7 @@ const upstashRedis =
 
 async function isRateLimited(key: string) {
   if (!upstashRedis) {
-    // Keep middleware functional in local/dev when Upstash REST creds are not configured.
+    // Keep middleware functional when Upstash REST creds are not configured.
     return false;
   }
   const count = await upstashRedis.incr(key);
@@ -22,18 +21,24 @@ async function isRateLimited(key: string) {
   return count > 120;
 }
 
-export default auth(async (req) => {
-  const session = req.auth;
+export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
   const isWebhook = pathname.startsWith("/api/webhooks/");
-  const guarded = pathname.startsWith("/dashboard") || pathname.startsWith("/api");
+  const isAuth = pathname.startsWith("/api/auth");
+  const isDashboard = pathname.startsWith("/dashboard");
 
-  if (guarded && !isWebhook && !session?.user?.orgId && !pathname.startsWith("/api/auth")) {
+  const sessionToken =
+    req.cookies.get("authjs.session-token")?.value ??
+    req.cookies.get("__Secure-authjs.session-token")?.value ??
+    req.cookies.get("next-auth.session-token")?.value ??
+    req.cookies.get("__Secure-next-auth.session-token")?.value;
+
+  if (isDashboard && !sessionToken) {
     return NextResponse.redirect(new URL("/api/auth/signin", req.url));
   }
 
-  if (pathname.startsWith("/api") && !isWebhook) {
-    const identifier = session?.user?.orgId ?? req.ip ?? "anon";
+  if (pathname.startsWith("/api") && !isWebhook && !isAuth) {
+    const identifier = req.ip ?? "anon";
     const limited = await isRateLimited(`devpulse:ratelimit:${identifier}`);
     if (limited) {
       return NextResponse.json({ error: "Too many requests" }, { status: 429 });
@@ -41,8 +46,9 @@ export default auth(async (req) => {
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: ["/dashboard/:path*", "/api/:path*"]
 };
+

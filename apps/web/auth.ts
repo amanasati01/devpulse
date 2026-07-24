@@ -2,21 +2,14 @@ import NextAuth from "next-auth";
 import GitHub from "next-auth/providers/github";
 import { prisma } from "@devpulse/db";
 
-const githubClientId = process.env.GITHUB_CLIENT_ID;
-const githubClientSecret = process.env.GITHUB_CLIENT_SECRET;
-
-if (!githubClientId || !githubClientSecret) {
-  throw new Error("Missing GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET");
-}
-
 export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   trustHost: true,
   session: { strategy: "jwt" },
   providers: [
     GitHub({
-      clientId: githubClientId,
-      clientSecret: githubClientSecret,
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
       allowDangerousEmailAccountLinking: true,
       authorization: { params: { scope: "read:user user:email repo" } }
     })
