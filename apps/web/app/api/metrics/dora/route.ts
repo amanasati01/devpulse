@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@devpulse/db";
 import { cacheAside, orgScopedKey } from "@devpulse/lib/src/redis";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type PullRequestRecord = Awaited<ReturnType<typeof prisma.pullRequest.findMany>>[number];

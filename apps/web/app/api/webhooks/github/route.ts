@@ -3,6 +3,9 @@ import { prisma } from "@devpulse/db";
 import { getProcessGithubEventQueue } from "@devpulse/lib/src/queue";
 import { githubWebhookHeadersSchema, verifyGithubHmac } from "@devpulse/lib/src/validation";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   console.log("[DevPulse] Webhook received:", request.method, request.url);
 

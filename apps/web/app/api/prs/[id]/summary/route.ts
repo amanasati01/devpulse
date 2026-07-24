@@ -4,6 +4,7 @@ import { prisma } from "@devpulse/db";
 import { summarizePullRequest } from "@devpulse/lib/src/ai";
 import { getGeneratePrSummaryQueue } from "@devpulse/lib/src/queue";
 
+export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function POST(

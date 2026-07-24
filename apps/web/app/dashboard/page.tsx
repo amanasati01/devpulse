@@ -5,6 +5,8 @@ import { MetricCard } from "@/components/metric-card";
 import { RealtimeFeed } from "@/components/realtime-feed";
 import { Topbar } from "@/components/topbar";
 
+export const dynamic = "force-dynamic";
+
 type SnapshotCard = {
   id?: string;
   deploymentFrequency: number;
