@@ -48,7 +48,16 @@ export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
 
     const connectWebSocket = () => {
       if (isUnmounted) return;
-      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+      let wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+
+      // If running on an HTTPS deployed site (e.g. Render) but wsUrl still points to ws://localhost:3001,
+      // skip attempting localhost connection to avoid browser Mixed Content errors.
+      if (typeof window !== "undefined" && window.location.protocol === "https:" && wsUrl.includes("localhost")) {
+        console.warn("[DevPulse] On HTTPS page, NEXT_PUBLIC_WS_URL must be set to wss://<your-ws-service>.onrender.com");
+        setStatus("disconnected");
+        return;
+      }
+
       setStatus("connecting");
 
       try {
