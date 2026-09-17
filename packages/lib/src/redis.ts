@@ -4,7 +4,7 @@ let _redis: IORedis | undefined;
 
 export function getRedisClient() {
   if (!_redis) {
-    const url = process.env.REDIS_URL!;
+    const url = process.env.REDIS_URL || "redis://localhost:6379";
     const useTls = url.startsWith("rediss://");
 
     _redis = new IORedis(url, {

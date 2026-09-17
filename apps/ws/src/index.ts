@@ -4,6 +4,9 @@ import { getRedisClient } from "@devpulse/lib";
 const port = Number(process.env.PORT ?? process.env.WS_PORT ?? 3001);
 const wss = new WebSocketServer({ port });
 const sub = getRedisClient().duplicate();
+sub.on("error", (err) => {
+  console.error("[DevPulse real-time] Redis connection error:", err.message);
+});
 
 wss.on("connection", (socket) => {
   socket.send(

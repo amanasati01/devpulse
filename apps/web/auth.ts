@@ -20,10 +20,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         try {
           const githubId = String(profile.id);
           const email = token.email ?? `${githubId}@users.noreply.github.com`;
-          
+
           // Use the GitHub username (login) as the org slug to match webhooks perfectly
           const orgSlug = profile.login ? (profile.login as string).toLowerCase() : `org-${githubId}`;
-          
+
           let org = await prisma.organization.findUnique({ where: { slug: orgSlug } });
           if (!org) {
             org = await prisma.organization.create({
