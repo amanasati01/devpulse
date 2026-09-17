@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@devpulse/db";
+import { getRedisClient } from "@devpulse/lib";
 import { getProcessGithubEventQueue } from "@devpulse/lib/src/queue";
 import { githubWebhookHeadersSchema, verifyGithubHmac } from "@devpulse/lib/src/validation";
 
@@ -117,16 +118,45 @@ export async function POST(request: NextRequest) {
       data: { processedAt: new Date() }
     });
 
+    // ── Direct Real-time Event Publishing ──
+    // Publish live activity directly to Redis channel so the Realtime Feed UI
+    // receives events immediately even without a background worker running.
+    try {
+      const redis = getRedisClient();
+      let iconType: "pr" | "incident" | "deploy" | "system" | "user" = "system";
+      let message = `Webhook received from ${payload.repository?.name ?? orgSlug} (${eventType})`;
+
+      if (eventType === "pull_request" && payload.pull_request) {
+        iconType = "pr";
+        message = `PR #${payload.pull_request.number} ${payload.action ?? "updated"}: ${payload.pull_request.title}`;
+      } else if (eventType === "push") {
+        iconType = "deploy";
+        const branch = payload.ref?.replace("refs/heads/", "") ?? "main";
+        message = `Push to ${branch} on ${payload.repository?.name ?? "repo"} by @${payload.pusher?.name ?? payload.sender?.login ?? "dev"}`;
+      }
+
+      await redis.publish(
+        "devpulse:events",
+        JSON.stringify({
+          type: eventType.toUpperCase(),
+          payload: { message },
+          timestamp: Date.now(),
+          iconType
+        })
+      );
+      console.log("[DevPulse] Realtime event published to Redis:", message);
+    } catch (pubErr) {
+      console.warn("[DevPulse] Could not publish realtime event:", pubErr);
+    }
+
     // Also queue for worker (fire-and-forget) for additional async processing
-    // like AI summaries, DORA metrics, etc.
     try {
       await getProcessGithubEventQueue().add("process", {
         orgId: org.id,
         webhookEventId: event.id
       });
-      console.log("[DevPulse] Queued event for async processing:", event.id);
     } catch (err) {
-      console.error("[DevPulse] Failed to enqueue event (Redis issue):", err);
+      // Redis queue optional
     }
 
     return NextResponse.json({ ok: true });
