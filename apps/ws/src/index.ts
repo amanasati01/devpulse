@@ -9,6 +9,10 @@ sub.on("error", (err) => {
 });
 
 wss.on("connection", (socket) => {
+  socket.on("error", (err) => {
+    console.warn("[DevPulse WS] Socket error:", err.message);
+  });
+
   socket.send(
     JSON.stringify({
       type: "connected",

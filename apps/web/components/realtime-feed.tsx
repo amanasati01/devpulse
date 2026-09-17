@@ -1,10 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, Sparkles, GitPullRequestArrow, ShieldAlert, Rocket, Settings, User } from "lucide-react";
+import { Activity, GitPullRequestArrow, ShieldAlert, Rocket, Settings, User, WifiOff, RefreshCw } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
 
 type FeedEvent = { type: string; message: string; timestamp: number; iconType: "pr" | "incident" | "deploy" | "system" | "user" };
+
+type ConnectionStatus = "connected" | "connecting" | "disconnected" | "demo";
 
 const DEMO_EVENT_POOL: Omit<FeedEvent, "timestamp">[] = [
   { type: "AI Analysis", message: "PR #143 analyzed — AI risk score: 71/100 · auth-service", iconType: "pr" },
@@ -19,10 +21,14 @@ const DEMO_EVENT_POOL: Omit<FeedEvent, "timestamp">[] = [
 
 export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
   const [events, setEvents] = useState<FeedEvent[]>([]);
+  const [status, setStatus] = useState<ConnectionStatus>(isDemo ? "demo" : "connecting");
   const intervalRef = useRef<NodeJS.Timeout>();
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     if (isDemo) {
+      setStatus("demo");
       const addEvent = () => {
         const randomEvent = DEMO_EVENT_POOL[Math.floor(Math.random() * DEMO_EVENT_POOL.length)];
         setEvents((prev) => [{ ...randomEvent, timestamp: Date.now() }, ...prev].slice(0, 8));
@@ -32,21 +38,81 @@ export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
       };
 
       addEvent();
-      return () => clearTimeout(intervalRef.current);
+      return () => {
+        if (intervalRef.current) clearTimeout(intervalRef.current);
+      };
     }
 
-    const ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL!);
-    ws.onmessage = (message) => {
-      const parsed = JSON.parse(message.data);
-      // Map real WS events to our local type if needed, or just handle both
-      setEvents((prev) => [{ 
-        type: parsed.type, 
-        message: JSON.stringify(parsed.payload), 
-        timestamp: Date.now(),
-        iconType: "system" 
-      } as FeedEvent, ...prev].slice(0, 8));
+    let isUnmounted = false;
+    let retryDelay = 3000;
+
+    const connectWebSocket = () => {
+      if (isUnmounted) return;
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
+      setStatus("connecting");
+
+      try {
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          if (isUnmounted) return;
+          setStatus("connected");
+          retryDelay = 3000;
+        };
+
+        ws.onmessage = (message) => {
+          if (isUnmounted) return;
+          try {
+            const parsed = JSON.parse(message.data);
+            const payloadStr = typeof parsed.payload === "string"
+              ? parsed.payload
+              : parsed.payload?.message || JSON.stringify(parsed.payload);
+
+            setEvents((prev) => [{ 
+              type: parsed.type || "Event", 
+              message: payloadStr, 
+              timestamp: Date.now(),
+              iconType: parsed.iconType || "system" 
+            } as FeedEvent, ...prev].slice(0, 8));
+          } catch (e) {
+            console.warn("[DevPulse WebSocket] Message parse error:", e);
+          }
+        };
+
+        ws.onerror = () => {
+          if (isUnmounted) return;
+          setStatus("disconnected");
+        };
+
+        ws.onclose = () => {
+          if (isUnmounted) return;
+          setStatus("disconnected");
+          wsRef.current = null;
+          reconnectTimeoutRef.current = setTimeout(() => {
+            retryDelay = Math.min(retryDelay * 1.5, 30000);
+            connectWebSocket();
+          }, retryDelay);
+        };
+      } catch (err) {
+        if (isUnmounted) return;
+        setStatus("disconnected");
+        reconnectTimeoutRef.current = setTimeout(() => {
+          connectWebSocket();
+        }, retryDelay);
+      }
     };
-    return () => ws.close();
+
+    connectWebSocket();
+
+    return () => {
+      isUnmounted = true;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+    };
   }, [isDemo]);
 
   const getIcon = (type: string) => {
@@ -65,6 +131,39 @@ export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
     return `${Math.floor(diff / 60000)}m ago`;
   };
 
+  const renderStatusBadge = () => {
+    if (status === "demo") {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
+          <Activity className="h-3.5 w-3.5" />
+          Live Simulation
+        </span>
+      );
+    }
+    if (status === "connected") {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
+          <Activity className="h-3.5 w-3.5" />
+          Connected
+        </span>
+      );
+    }
+    if (status === "connecting") {
+      return (
+        <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 px-3 py-1 text-xs text-amber-300">
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+          Connecting...
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-2 rounded-full bg-slate-400/10 px-3 py-1 text-xs text-slate-400">
+        <WifiOff className="h-3.5 w-3.5" />
+        Offline
+      </span>
+    );
+  };
+
   return (
     <section className="glass-panel rounded-[28px] p-5">
       <div className="mb-5 flex items-center justify-between">
@@ -72,10 +171,7 @@ export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
           <p className="text-xs uppercase tracking-[0.28em] text-slate-500">Live activity</p>
           <h3 className="mt-2 text-lg font-semibold text-white">Realtime Feed</h3>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs text-emerald-300">
-          <Activity className="h-3.5 w-3.5" />
-          {isDemo ? "Live Simulation" : "Connected"}
-        </span>
+        {renderStatusBadge()}
       </div>
       <ul className="space-y-3 min-h-[300px]">
         <AnimatePresence initial={false}>
@@ -104,10 +200,11 @@ export function RealtimeFeed({ isDemo }: { isDemo?: boolean }) {
         </AnimatePresence>
         {events.length === 0 ? (
           <li className="rounded-2xl bg-white/[0.03] p-6 text-center text-sm text-slate-500 border border-dashed border-white/10">
-            Waiting for pipeline activity...
+            {status === "disconnected" ? "WebSocket server offline. Reconnecting..." : "Waiting for pipeline activity..."}
           </li>
         ) : null}
       </ul>
     </section>
   );
 }
+

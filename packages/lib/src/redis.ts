@@ -9,11 +9,22 @@ export function getRedisClient() {
 
     _redis = new IORedis(url, {
       maxRetriesPerRequest: null,
+      retryStrategy(times) {
+        // Exponential backoff up to 30s instead of endless 2-second log spamming
+        const delay = Math.min(times * 1000, 30000);
+        return delay;
+      },
       ...(useTls ? { tls: {} } : {})
     });
 
+    let lastLoggedErrorTime = 0;
     _redis.on("error", (err) => {
-      console.error("[DevPulse] Redis connection error:", err.message);
+      // Throttle error logs to at most once every 30 seconds to keep server logs clean
+      const now = Date.now();
+      if (now - lastLoggedErrorTime > 30000) {
+        console.error("[DevPulse] Redis connection error:", err.message);
+        lastLoggedErrorTime = now;
+      }
     });
   }
   return _redis;
