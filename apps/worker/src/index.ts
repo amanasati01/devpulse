@@ -1,6 +1,16 @@
+import http from "http";
 import { Job, Worker } from "bullmq";
 import { prisma } from "@devpulse/db";
 import { getRedisClient, scoreRisk, summarizePullRequest } from "@devpulse/lib";
+
+// Simple HTTP server so Render health check succeeds instantly whether deployed as Web Service or Worker
+const healthPort = Number(process.env.PORT ?? 10000);
+http.createServer((_req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("DevPulse Worker OK");
+}).listen(healthPort, () => {
+  console.log(`[DevPulse Worker] Health check server listening on port ${healthPort}`);
+});
 
 const redis = getRedisClient();
 
