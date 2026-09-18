@@ -9,7 +9,9 @@ const envSchema = z.object({
   GITHUB_CLIENT_SECRET: z.string().min(1),
   GITHUB_WEBHOOK_SECRET: z.string().min(1),
   OPENAI_API_KEY: z.string().min(1),
-  NEXT_PUBLIC_WS_URL: z.string().url()
+  NEXT_PUBLIC_WS_URL: z.string().url(),
+  WORKER_URL: z.string().url().optional(),
+  NEXT_PUBLIC_WORKER_URL: z.string().url().optional()
 });
 
 export const env = envSchema.parse(process.env);

@@ -105,6 +105,7 @@ DevPulse is highly configurable via environment variables. Key configurations in
 | `GITHUB_WEBHOOK_SECRET` | Secret used to verify GitHub webhook signatures |
 | `OPENAI_API_KEY` | Your OpenAI API key for risk scoring and summaries |
 | `NEXT_PUBLIC_WS_URL` | The URL for the WebSocket server connection |
+| `WORKER_URL` | Worker server URL for background processing (`https://devpulse-worker.onrender.com`) |
 
 ---
 

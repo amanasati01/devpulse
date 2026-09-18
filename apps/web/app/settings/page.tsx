@@ -54,7 +54,8 @@ export default async function SettingsPage() {
             <div className="mt-5 grid gap-3 md:grid-cols-2">
               {[
                 { name: "GitHub", detail: "OAuth and webhook ingestion", status: "Healthy" },
-                { name: "OpenAI", detail: "PR summary and risk scoring", status: "Online" }
+                { name: "OpenAI", detail: "PR summary and risk scoring", status: "Online" },
+                { name: "Background Worker", detail: process.env.WORKER_URL || "https://devpulse-worker.onrender.com", status: "Connected" }
               ].map((item) => (
                 <div key={item.name} className="rounded-3xl bg-white/[0.03] p-4">
                   <div className="flex items-center justify-between">
