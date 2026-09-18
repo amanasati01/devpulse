@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AlertTriangle, ChevronDown, ChevronUp, Clock3, GitPullRequestArrow, Sparkles } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Clock3, GitPullRequestArrow, RefreshCw, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +32,28 @@ const DEMO_SUMMARIES: Record<string, string> = {
 
 export function PRTable({ prs, isDemo }: { prs: PR[]; isDemo?: boolean }) {
   const [rows, setRows] = useState(prs);
-  const [loading, setLoading] = useState<Record<string, string>>({});
-  const [expanded, setExpanded] = useState<string | null>(rows[0]?.id ?? null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
+  async function syncFromGithub() {
+    if (isDemo) return;
+    setIsSyncing(true);
+    setSyncStatus(null);
+    try {
+      const res = await fetch("/api/prs/sync", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.prs) {
+        setRows(data.prs);
+        setSyncStatus(`Synced ${data.syncedCount ?? data.prs.length} PRs from GitHub.`);
+      } else {
+        setSyncStatus(data.error || "Failed to sync PRs from GitHub.");
+      }
+    } catch (err) {
+      setSyncStatus("Failed to sync from GitHub.");
+    } finally {
+      setIsSyncing(false);
+    }
+  }
 
   async function runSummary(prId: string) {
     if (isDemo) {
@@ -84,6 +104,24 @@ export function PRTable({ prs, isDemo }: { prs: PR[]; isDemo?: boolean }) {
 
   return (
     <div className="glass-panel rounded-[28px] p-4 md:p-6">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="text-xs text-slate-400">
+          {syncStatus && <span className="text-sky-300 font-medium">{syncStatus}</span>}
+        </div>
+        {!isDemo && (
+          <Button
+            type="button"
+            variant="secondary"
+            className="flex items-center gap-2 text-xs px-3 py-1.5"
+            disabled={isSyncing}
+            onClick={syncFromGithub}
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin text-sky-400" : ""}`} />
+            {isSyncing ? "Syncing PRs..." : "Sync PRs from GitHub"}
+          </Button>
+        )}
+      </div>
+
       <div className="mb-5 grid gap-3 rounded-[28px] bg-white/[0.03] px-5 py-4 text-xs uppercase tracking-[0.22em] text-slate-500 md:grid-cols-[1.4fr_0.5fr_0.8fr_0.7fr_0.9fr]">
         <span>Pull request</span>
         <span>Status</span>
@@ -199,7 +237,15 @@ export function PRTable({ prs, isDemo }: { prs: PR[]; isDemo?: boolean }) {
         {rows.length === 0 ? (
           <div className="rounded-[28px] bg-white/[0.03] p-10 text-center">
             <p className="text-lg font-medium text-white">No pull requests yet</p>
-            <p className="mt-2 text-sm text-slate-400">Send a GitHub webhook or connect your org to populate live PR intelligence.</p>
+            <p className="mt-2 text-sm text-slate-400">Sync PRs directly from your connected GitHub account or configure GitHub webhooks.</p>
+            {!isDemo && (
+              <div className="mt-5 flex justify-center">
+                <Button type="button" onClick={syncFromGithub} disabled={isSyncing} className="flex items-center gap-2">
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+                  {isSyncing ? "Syncing from GitHub..." : "Sync PRs from GitHub"}
+                </Button>
+              </div>
+            )}
           </div>
         ) : null}
       </div>
