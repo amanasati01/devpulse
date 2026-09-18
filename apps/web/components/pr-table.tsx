@@ -32,6 +32,8 @@ const DEMO_SUMMARIES: Record<string, string> = {
 
 export function PRTable({ prs, isDemo }: { prs: PR[]; isDemo?: boolean }) {
   const [rows, setRows] = useState(prs);
+  const [loading, setLoading] = useState<Record<string, string>>({});
+  const [expanded, setExpanded] = useState<string | null>(rows[0]?.id ?? null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
